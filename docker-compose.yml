@@ -1,0 +1,55 @@
+# backend/docker-compose.yml
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    environment:
+      - PYTHON_SERVER_URL=http://ai_server:5001
+      - REDIS_URL=redis://redis:6379/0
+      - POSTGRES_PASSWORD=password
+
+
+  sidekiq:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: bundle exec sidekiq
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+      - redis
+    environment:
+      - PYTHON_SERVER_URL=http://ai_server:5001
+      - REDIS_URL=redis://redis:6379/0
+
+  db:
+    image: postgres:14
+    environment:
+      - POSTGRES_PASSWORD=password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7
+    volumes:
+      - redis_data:/var/lib/redis/data
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  default:
+    external:
+      name: chat_network
